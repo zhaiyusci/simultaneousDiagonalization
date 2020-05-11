@@ -1,0 +1,191 @@
+\documentclass[aspectratio=169,10pt]{beamer}
+
+%\documentclass[11pt]{article}
+%\usepackage{beamerarticle}
+%\usepackage[hidelinks]{hyperref}
+
+\usetheme[height=1cm]{Rochester}
+
+    \usepackage[T1]{fontenc}
+    \usepackage{fourier}
+    \usepackage{graphicx}
+    \usepackage{caption}
+    \usepackage{adjustbox} % Used to constrain images to a maximum size 
+    \usepackage{xcolor} % Allow colors to be defined
+    \usepackage{geometry} % Used to adjust the document margins
+    \usepackage{amsmath} % Equations
+    \usepackage{amssymb} % Equations
+
+\usepackage{natbib}
+    \usepackage{indentfirst}
+    \usepackage{minted}
+    \usemintedstyle{tango}
+    \usefonttheme{serif}
+    
+\title[Simultaneous diagonalization]{Simultaneous diagonalization and its C++ implementation}
+\author{Yu Zhai \\
+	\texttt{yuzhai@mail.huiligroup.org}}
+	\institute[ITC@JLU]{Institute of Theoretical Chemistry, Jilin University, Changchun, China. }
+	
+	\usepackage{color,soul}
+	%\renewcommand{\emph}[1]{\hl{#1}}
+	
+    \begin{document}  
+    	\begin{frame}
+    \maketitle
+    \end{frame}
+
+
+\begin{frame}{Introduction}
+
+    \begin{block}{}
+\ldots If they (observables) do commute there exist so
+many simultaneous eigenstates that they form a complete set \ldots
+
+\flushright
+P. A. M. Dirac, \textit{The Principles of Quantum Mechanics}
+    \end{block}
+
+Thus we do need an
+algorithm to obtain the simultaneous eigenstates of two (or more)
+matrices, 
+which is described in References~\cite{Dawes2004}, \cite{BunseGerstner1993} and \cite{Cardoso1996}.
+
+    Consider a set of matrices $\{\mathbf{A}\}$ of $N\times N$ complex matrices.
+In this work, however, I prefer limit us to real symmetric matrices, 
+with which are easier to deal.
+
+When the matrices in $\{\mathbf{A}\}$ are \emph{normal commuting
+	matrices}, their off-diagnoal terms can be set to zero by \emph{one} unitary
+transform, thus simultaneously diagonalizing the set $\{\mathbf{A}\}$.
+
+\end{frame}
+
+
+\begin{frame}[allowframebreaks]{Mathematical description of the problem}
+
+    Define 
+\begin{equation}
+\mathrm{off}(\mathbf{A})\equiv\sum_{0 \leq i \ne j < N}A_{ij}^2,
+\end{equation}
+where $A_{ij}$ denotes the row $i$ column $j$ entry of matrix $\mathbf{A}$.
+
+\inputminted[linenos,firstline=21, lastline=29, breaklines]{cpp}{../simultaneousDiagonalization.cc}
+   
+   \framebreak
+   
+   
+    Simultaneous diagonalization may be obtained by minimizing the composite
+objective
+\begin{equation}
+\mathrm{offsum}(\{\mathbf{A}\})\equiv\sum_{\mathbf{A}\in \{\mathbf{A}\}}\mathrm{off}(\mathbf{A}).
+\end{equation}
+
+\inputminted[linenos,firstline=31, lastline=37, breaklines]{cpp}{../simultaneousDiagonalization.cc}
+
+\end{frame}
+         
+         \begin{frame}[allowframebreaks]{Extended Jacobi technique} 
+    The extended Jacobi technique for simultaneous diagonalization
+constructs \(\mathbf{U}\) as a product of plane rotations globally applied to all
+\(\mathbf{A}\in\{\mathbf{A}\}\).
+
+    It is desired, for each choice of \(i\neq j\), to find the \(c\) and
+\(s\) so that \[
+O(c,s)\equiv\sum_{\mathbf{A}\in\{\mathbf{A}\}}\mathrm{off}(\mathbf{R}'(i,j,c,s)\mathbf{A}\mathbf{R}(i,j,c,s))
+\] is minimized.
+$'$ in this document means adjoint (conjugate transpose). 
+\only<article>{\footnote{The \texttt{'} notation is used in Julia, by the way.}}
+
+    Let us define yet another \(2\times 2\) real symmetric matrix \(\mathbf{G}_{ij}\) for
+\((i,j)\) \begin{equation}
+\mathbf{G}_{ij}\equiv \sum_{\mathbf{A}\in\{\mathbf{A}\}}\mathbf{h}(\mathbf{A})\mathbf{h}'(\mathbf{A}),
+\end{equation}
+    where \begin{equation}
+\mathbf{h}(\mathbf{A})\equiv[A_{ii}-A_{jj},\, A_{ij}+A_{ji}]'.
+\end{equation}
+
+\framebreak
+
+\inputminted[linenos,firstline=39, lastline=50, breaklines]{cpp}{../simultaneousDiagonalization.cc}
+
+\framebreak
+            
+    Denote \(\mathbf{R}(i,j,c,s)\) the rotation matrix equal to the identity
+matrix but for the following entries: 
+\begin{equation}
+    \begin{pmatrix}
+R_{ii} & R_{ij} \\ R_{ji} & R_{jj}\end{pmatrix}=\begin{pmatrix}
+c & -s \\ s & c
+\end{pmatrix} \text{ with } c,s\in\mathbb{R}\text{ and } c^2+s^2=1.
+\end{equation}
+
+    Thus we have a theorem, whose proof is not given here: Under
+constraint \(c^2+s^2=1\), \(O(c,s)\) is minimized at \[
+c=\sqrt{\frac{x+r}{2r}}\quad s=\frac{y}{\sqrt{2r(x+r)}}\quad r=\sqrt{x^2+y^2},
+\] where \((x, y)'\) is any eigenvector associated to the largest
+eigenvalue of \(G\).  If the $(x,y)'$ are normalized, then $r =1$, formula above turns to
+\begin{equation}
+c=\sqrt{\frac{x+1}{2}}\quad s=\frac{y}{\sqrt{2(x+1)}}.
+\end{equation}
+            
+            \framebreak
+            \inputminted[linenos,firstline=52, lastline=65, breaklines]{cpp}{../simultaneousDiagonalization.cc}
+   
+   \framebreak         
+    Then we have the Jacobi-like iteration scheme.
+
+\inputminted[linenos,firstline=67, lastline=78, breaklines]{cpp}{../simultaneousDiagonalization.cc}
+\ldots \, \ldots
+\inputminted[linenos,firstline=87, lastline=87, breaklines]{cpp}{../simultaneousDiagonalization.cc}
+
+
+\end{frame}
+
+\begin{frame}[allowframebreaks=1]{C++ syntax related}
+To make the program work, the class is defined as
+
+\inputminted[linenos,firstline=6,lastline=17,breaklines]{cpp}{../simultaneousDiagonalization.h} 
+\ldots\,\ldots
+\inputminted[linenos,firstline=27,lastline=27,breaklines]{cpp}{../simultaneousDiagonalization.h} 
+\framebreak
+And its constructor
+
+\inputminted[linenos,firstline=4, lastline=19, breaklines]{cpp}{../simultaneousDiagonalization.cc}
+\end{frame}
+
+\begin{frame}{Unit test}
+\begin{columns}
+	\begin{column}{0.3\textwidth}
+Three tests are designed while here I only show the last one.
+\begin{itemize}
+	\item Both matrices $\mathbf{A}$ and $\mathbf{B}$ are generated from eigenvalues;
+	\item They are both degenerated;
+	\item Use the method presented \textsc{can} give reasonable solution. 
+\end{itemize}
+	\end{column}
+	\begin{column}{0.7\textwidth}
+		Results:
+\scriptsize
+\inputminted[linenos, breaklines]{text}{../test3.txt}
+	\end{column}
+\end{columns}
+
+\end{frame}
+
+\begin{frame}
+\centering\itshape
+{\large Thank you for your attention. }
+
+\vspace{0.5in}
+
+\small\today
+\end{frame}
+ 
+ \begin{frame}{Reference}
+ \bibliographystyle{unsrt}
+ \bibliography{/home/yuzhai/Library/000ref}
+\end{frame}
+
+
+    \end{document}
