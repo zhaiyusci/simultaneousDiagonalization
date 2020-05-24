@@ -2,7 +2,7 @@
 #include<iostream>
 
 simultaneousDiagonalization::simultaneousDiagonalization(
-    std::initializer_list<Eigen::MatrixXd> matrices, double eps ): 
+    std::vector<Eigen::MatrixXd> matrices, double eps ): 
   matrices_(matrices), 
   r_ ( matrices_[0].rows() ), c_ ( matrices_[0].cols() ) 
 {

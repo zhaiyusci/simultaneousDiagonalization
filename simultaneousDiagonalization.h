@@ -6,7 +6,7 @@
 class simultaneousDiagonalization{
   public:
     simultaneousDiagonalization(
-        std::initializer_list<Eigen::MatrixXd> matrices,
+        std::vector<Eigen::MatrixXd> matrices,
         double eps = 1.e-8);
     inline Eigen::VectorXd eigenvalues(int i) const {
       return matrices_[i].diagonal(); 
