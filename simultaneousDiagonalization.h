@@ -11,6 +11,9 @@ class simultaneousDiagonalization{
     inline Eigen::VectorXd eigenvalues(int i) const {
       return matrices_[i].diagonal(); 
     }
+    inline Eigen::MatrixXd remains(int i) const {
+      return matrices_[i]; 
+    }
     inline Eigen::MatrixXd eigenvectors() const {
       return eigenvectors_; // all matrices share the same eigen vectors
     }
@@ -24,5 +27,9 @@ class simultaneousDiagonalization{
     Eigen::Matrix2d G_(int i, int j) const;
     Eigen::MatrixXd R_(int i, int j) const;
     void compute_(double eps);
+    std::vector<double> scale_;
+    void deal_fixed_point_();
+    void remove_scaling_();
+    void sweep_();
 };
 #endif // SIMULTANEOUSDIAGONALIZATION_H_

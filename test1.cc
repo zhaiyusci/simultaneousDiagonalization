@@ -30,7 +30,7 @@ int main(){
 
   A=eigenvectors*A*eigenvectors.adjoint();
 
-  simultaneousDiagonalization sd{A};
+  simultaneousDiagonalization sd({A});
   std::cout << "sd.eigenvectors()"<< std::endl<< std::endl;
   std::cout << sd.eigenvectors()<< std::endl<< std::endl;
   std::cout << "sd.eigenvalues()"<< std::endl<< std::endl;

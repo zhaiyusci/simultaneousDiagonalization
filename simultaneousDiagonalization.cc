@@ -1,10 +1,12 @@
 #include"simultaneousDiagonalization.h"
 #include<iostream>
+#include<fstream>
 
 simultaneousDiagonalization::simultaneousDiagonalization(
     std::vector<Eigen::MatrixXd> matrices, double eps ): 
   matrices_(matrices), 
-  r_ ( matrices_[0].rows() ), c_ ( matrices_[0].cols() ) 
+  r_ ( matrices_[0].rows() ), c_ ( matrices_[0].cols() ) ,
+  scale_( matrices.size(), 1.)
 {
   if(r_ != c_){
     throw std::runtime_error("Sizes inconsist.");
@@ -41,9 +43,6 @@ Eigen::Matrix2d simultaneousDiagonalization::G_(int i, int j) const {
   for (auto && A: this -> matrices_){
     Eigen::Vector2d h;
     h << A(i,i)-A(j,j), A(i,j)+A(j,i);
-#ifndef NDEBUG
-    std::cout << "h   " << std::endl << h << std::endl;
-#endif
     res += h*h.adjoint();
   }
   return res;
@@ -65,23 +64,54 @@ Eigen::MatrixXd simultaneousDiagonalization::R_(int i, int j) const{
 }
 
 void simultaneousDiagonalization::compute_(double eps){
+  std::ofstream off("off");
+  double oldoffsum(1.e308); // big enough
   for(int iter = 0; iter < 1000; ++iter){
-    if(offsum_()>eps){
-      for(int i=0; i<r_; ++i){
-        for(int j=i+1; j<r_; ++j){
-          Eigen::MatrixXd Rmat = R_(i,j);
-          for(auto && A : matrices_){
-            A= Rmat.adjoint() * A * Rmat;
-          }
-          eigenvectors_ = eigenvectors_ * Rmat;
-        }
-      }
+    double offsum = offsum_();
+    off<<" "<< iter<<" "<< oldoffsum<<" "<< offsum<<" "<< oldoffsum - offsum <<" "<<std::endl;
+    if(fabs(oldoffsum - offsum) > eps) {
+      sweep_();
+      // remove_scaling_();
+      oldoffsum = offsum;
     }else{
-      std:: cout << "CONVERGED." <<std::endl;
+      // remove_scaling_();
+      sweep_();
+      std:: cout << "CONVERGED. offsum = " << offsum_() <<std::endl;
       return;
     }
   }
+  // remove_scaling_();
+  // sweep_();
   for(int i = 0; i != 3; ++i) std::cout 
     << "-!- ### NOT CONVERGED WITHIN 1000 STEPS ### -!-" <<std::endl;
   return;
+}
+
+void simultaneousDiagonalization::sweep_(){
+  for(int i=0; i<r_; ++i){
+    for(int j=i+1; j<r_; ++j){
+      Eigen::MatrixXd Rmat = R_(i,j);
+      for(auto && A : matrices_){
+        A= Rmat.adjoint() * A * Rmat;
+      }
+
+      eigenvectors_ = eigenvectors_ * Rmat;
+    }
+  }
+  return;
+}
+
+void simultaneousDiagonalization::deal_fixed_point_(){
+  for (size_t i = 1; i< matrices_.size(); ++i){
+    matrices_[i] *= pow(1.2, i);
+    scale_[i] *= pow(1.2, i);
+  }
+  return; 
+}
+void simultaneousDiagonalization::remove_scaling_(){
+  for (size_t i = 1; i< matrices_.size(); ++i){
+    matrices_[i] /= scale_[i];
+    scale_[i] =1.;
+  }
+  return; 
 }
