@@ -31,10 +31,16 @@ double simultaneousDiagonalization::off_(const Eigen::MatrixXd & A){
 }
 
 double simultaneousDiagonalization::offsum_()const{
+  static int iter(0);
   double res=0.0;
+  std::cout << iter;
   for(auto && i : this -> matrices_){
-    res += off_(i);
+    auto off = off_(i) ;
+    std::cout <<"   "<< off;
+    res += off;
   }
+  std::cout <<"   "<<  res << std::endl;
+  iter++;
   return res;
 }
 
@@ -48,8 +54,9 @@ Eigen::Matrix2d simultaneousDiagonalization::G_(int i, int j) const {
   return res;
 }
 
-Eigen::MatrixXd simultaneousDiagonalization::R_(int i, int j) const{
-  Eigen::MatrixXd res = Eigen::MatrixXd::Identity(r_, c_);
+// Eigen::SparseMatrix<double> simultaneousDiagonalization::R_(int i, int j) const{
+std::tuple<double, double> simultaneousDiagonalization::R_(int i, int j) const{
+  Eigen::SparseMatrix<double> res (r_, c_);
   Eigen::Vector2d xy = 
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d>(G_(i,j))
     .eigenvectors().col(1);
@@ -57,18 +64,23 @@ Eigen::MatrixXd simultaneousDiagonalization::R_(int i, int j) const{
   double y = xy[1];
   double c = sqrt((x+1.)/2.);
   double s = y/sqrt(2.*(x+1.));
-  res(i,i) = res(j,j) = c;
-  res(i,j) = -s; 
-  res(j,i) =  s;
-  return res;
+  /*
+  for (int i = 0; i< r_; ++i){
+    res.insert(i,i) = 1.;
+  }
+  res.insert(i,i) = c;
+  res.insert(j,j) = c;
+  res.insert(i,j) = -s; 
+  res.insert(j,i) =  s;
+  */
+  return std::make_tuple(c,s);
+  // return res;
 }
 
 void simultaneousDiagonalization::compute_(double eps){
-  std::ofstream off("off");
   double oldoffsum(1.e308); // big enough
-  for(int iter = 0; iter < 1000; ++iter){
+  for(int iter = 0; iter < 10000; ++iter){
     double offsum = offsum_();
-    off<<" "<< iter<<" "<< oldoffsum<<" "<< offsum<<" "<< oldoffsum - offsum <<" "<<std::endl;
     if(fabs(oldoffsum - offsum) > eps) {
       sweep_();
       // remove_scaling_();
@@ -83,19 +95,35 @@ void simultaneousDiagonalization::compute_(double eps){
   // remove_scaling_();
   // sweep_();
   for(int i = 0; i != 3; ++i) std::cout 
-    << "-!- ### NOT CONVERGED WITHIN 1000 STEPS ### -!-" <<std::endl;
+    << "-!- ### NOT CONVERGED WITHIN 10000 STEPS ### -!-" <<std::endl;
   return;
 }
 
 void simultaneousDiagonalization::sweep_(){
   for(int i=0; i<r_; ++i){
     for(int j=i+1; j<r_; ++j){
-      Eigen::MatrixXd Rmat = R_(i,j);
+      // Eigen::SparseMatrix<double> Rmat = R_(i,j);
+      double c, s;
+      std::tie(c,s) = R_(i,j);
       for(auto && A : matrices_){
-        A= Rmat.adjoint() * A * Rmat;
+        // A= Rmat.adjoint() * A * Rmat;
+        // The right hand side
+        Eigen::VectorXd coli = A.col(i);
+        Eigen::VectorXd colj = A.col(j);
+        A.col(i) = c*coli + s*colj;
+        A.col(j) = -s*coli + c*colj;
+        // The left hand side
+        Eigen::RowVectorXd rowi = A.row(i);
+        Eigen::RowVectorXd rowj = A.row(j);
+        A.row(i) = c*rowi + s*rowj;
+        A.row(j) = -s*rowi + c*rowj;
       }
 
-      eigenvectors_ = eigenvectors_ * Rmat;
+      // eigenvectors_ *= Rmat;
+      Eigen::VectorXd coli = eigenvectors_.col(i);
+      Eigen::VectorXd colj = eigenvectors_.col(j);
+      eigenvectors_.col(i) = c*coli + s*colj;
+      eigenvectors_.col(j) = -s*coli + c*colj;
     }
   }
   return;

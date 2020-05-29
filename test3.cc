@@ -1,7 +1,7 @@
 #include"simultaneousDiagonalization.h"
 #include<iostream>
 
-#define N 5
+#define N 20
 int main(){
   // First, build a system that are Self-adjoint and get its eigenvectors
   Eigen::MatrixXd H(N,N);

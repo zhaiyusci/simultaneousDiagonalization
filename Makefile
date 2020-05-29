@@ -1,6 +1,6 @@
-CXX=clang++
-# CXX=g++
-CXXFLAGS=-O3 -DNDEBUG -std=c++11 -I/usr/include
+# CXX=clang++
+CXX=g++
+CXXFLAGS=-O3 -DNDEBUG -std=c++11 -I/usr/include -g
 tests=test1.exe test2.exe test3.exe
 .PHONY: clean run all
 
